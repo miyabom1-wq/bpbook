@@ -1,13 +1,7 @@
 :root{
-  --bg:#f6f7fb;
-  --card:#ffffff;
-  --border:#e5e7eb;
-  --text:#0f172a;
-  --muted:#6b7280;
-  --primary:#374151;          /* slate-700 */
-  --primary-border:#475569;   /* slate-600 */
-  --primary-hover:#1f2937;    /* slate-800 */
-  --stripe:#f3f4f6;           /* light gray for zebra */
+  --bg:#f6f7fb; --card:#ffffff; --border:#e5e7eb; --text:#0f172a; --muted:#6b7280;
+  --primary:#374151; --primary-border:#475569; --primary-hover:#1f2937; --stripe:#f3f4f6;
+  --good:#16a34a; --warn:#f59e0b; --bad:#ef4444;
 }
 *{box-sizing:border-box}
 html,body{margin:0;background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,'Noto Sans JP','Hiragino Kaku Gothic ProN','Meiryo',sans-serif;overflow-x:hidden}
@@ -18,6 +12,10 @@ h1{font-size:18px;margin:0}
 .actions button,.actions select,.import-label{background:var(--card);color:var(--text);border:1px solid var(--border);border-radius:12px;padding:8px 10px;font-size:12px;cursor:pointer}
 .actions button:hover{background:#f8fafc}
 .import-label input{display:none}
+.menu-wrap{position:relative}
+.menu{position:absolute;right:0;top:40px;background:var(--card);border:1px solid var(--border);border-radius:12px;box-shadow:0 8px 30px rgba(0,0,0,.08);padding:8px;display:flex;flex-direction:column;gap:8px;min-width:200px;z-index:50}
+.menu-row{display:flex;gap:8px;align-items:center}
+.menu-label{font-size:12px;color:var(--muted)}
 main{max-width:960px;margin:0 auto;padding:12px;display:flex;flex-direction:column;gap:12px}
 .form-card,.table-card,.chart-card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:12px;box-shadow:0 1px 2px rgba(0,0,0,.03)}
 .table-title{font-weight:600;margin:4px 0 8px 2px;color:#334155}
@@ -33,17 +31,38 @@ table{width:100%;border-collapse:separate;border-spacing:0 0;table-layout:fixed}
 th,td{padding:12px 10px;border-bottom:1px solid var(--border);vertical-align:middle}
 th{color:#475569;text-align:left;background:#f8fafc;position:sticky;top:0}
 td{color:var(--text)}
-tbody tr:nth-child(odd){background:var(--stripe)} /* zebra stripe */
+tbody tr:nth-child(odd){background:var(--stripe)}
 .num{text-align:right}
 .col-date{width:44%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .col-num{width:18%}
+.col-actions{width:72px}
 .row-actions{display:flex;gap:6px;justify-content:flex-end}
 .row-actions button{background:var(--card);color:var(--text);border:1px solid var(--border);border-radius:10px;padding:6px 10px;cursor:pointer}
 .row-actions button:hover{background:#f3f4f6}
+.value.good{color:var(--good);font-weight:600}
+.value.warn{color:var(--warn);font-weight:600}
+.value.bad{color:var(--bad);font-weight:600}
 footer{padding:10px 16px;color:var(--muted);text-align:center}
-@media (max-width:640px){
-  .grid3{grid-template-columns:1fr}
-  .field label{width:86px}
-  th,td{padding:10px 8px}
-  .col-date{width:48%}
+
+@media (max-width:540px){
+  /* Card-like rows to avoid overlap */
+  thead{display:none}
+  table, tbody, tr, td{display:block;width:100%}
+  tbody tr{background:var(--card);border:1px solid var(--border);border-radius:12px;margin:8px 0;padding:8px}
+  tbody tr:nth-child(odd){background:var(--card)} /* disable zebra on cards */
+  td{border:none;padding:6px 4px}
+  td.col-date{font-weight:600;color:#334155}
+  td.col-num::before{content:attr(data-label);float:left;color:var(--muted)}
+  .row-actions{justify-content:flex-end;border-top:1px dashed var(--border);padding-top:6px;margin-top:4px}
 }
+
+.modal{position:fixed;inset:0;background:rgba(15,23,42,.5);display:flex;align-items:center;justify-content:center;z-index:100}
+.modal-card{background:var(--card);border:1px solid var(--border);border-radius:16px;min-width:280px;max-width:92vw;padding:12px;box-shadow:0 20px 60px rgba(0,0,0,.2)}
+.modal-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+.modal-head h2{margin:0;font-size:16px}
+.modal-head button{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:6px 10px;cursor:pointer}
+.modal-body{display:flex;flex-direction:column;gap:10px;color:var(--text)}
+.toggle{display:flex;gap:8px;align-items:center}
+.modal-foot{margin-top:8px}
+.desc{color:var(--muted);font-size:12px}
+@media (max-width:640px){.grid3{grid-template-columns:1fr} .field label{width:86px} th,td{padding:10px 8px} .col-date{width:48%}}

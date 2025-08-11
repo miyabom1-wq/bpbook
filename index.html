@@ -16,15 +16,22 @@
     <div class="actions">
       <button id="nav-home">ホーム</button>
       <button id="nav-all">全記録</button>
-      <button id="btn-export" title="CSVエクスポート">CSV出力</button>
-      <label class="import-label">
-        CSV取込 <input type="file" id="file-import" accept=".csv,text/csv">
-      </label>
-      <select id="range-select" title="表示範囲">
-        <option value="30">直近30件</option>
-        <option value="90">直近90件</option>
-        <option value="all">全件</option>
-      </select>
+      <div class="menu-wrap">
+        <button id="btn-menu">︙</button>
+        <div id="menu" class="menu hidden">
+          <button id="menu-export">CSV出力</button>
+          <label class="import-label">CSV取込 <input type="file" id="file-import" accept=".csv,text/csv"></label>
+          <div class="menu-row">
+            <label for="range-select" class="menu-label">グラフ範囲</label>
+            <select id="range-select">
+              <option value="30">直近30件</option>
+              <option value="90">直近90件</option>
+              <option value="all">全件</option>
+            </select>
+          </div>
+          <button id="btn-settings">設定</button>
+        </div>
+      </div>
     </div>
   </header>
 
@@ -63,8 +70,8 @@
               <th class="col-date">日付</th>
               <th class="num col-num">収縮</th>
               <th class="num col-num">拡張</th>
-              <th class="num col-num">脈拍</th>
-              <th></th>
+              <th class="num col-num col-pulse">脈拍</th>
+              <th class="col-actions"></th>
             </tr>
           </thead>
           <tbody></tbody>
@@ -86,8 +93,8 @@
               <th class="col-date">日付</th>
               <th class="num col-num">収縮</th>
               <th class="num col-num">拡張</th>
-              <th class="num col-num">脈拍</th>
-              <th></th>
+              <th class="num col-num col-pulse">脈拍</th>
+              <th class="col-actions"></th>
             </tr>
           </thead>
           <tbody></tbody>
@@ -96,9 +103,33 @@
     </section>
   </main>
 
-  <footer>
+  <footer id="footer-note" class="hidden">
     <small>データは端末内に保存されます（オフライン可）</small>
   </footer>
+
+  <!-- Settings modal -->
+  <div id="settings-modal" class="modal hidden">
+    <div class="modal-card">
+      <div class="modal-head">
+        <h2>設定</h2>
+        <button id="settings-close">✕</button>
+      </div>
+      <div class="modal-body">
+        <label class="toggle">
+          <input type="checkbox" id="opt-show-pulse" checked>
+          <span>脈拍の列を表示</span>
+        </label>
+        <label class="toggle">
+          <input type="checkbox" id="opt-show-footer">
+          <span>下部の説明文を表示</span>
+        </label>
+        <div class="desc">※ 設定はこの端末に保存されます。</div>
+      </div>
+      <div class="modal-foot">
+        <button id="settings-save" class="primary">保存</button>
+      </div>
+    </div>
+  </div>
 
   <script>
     if ('serviceWorker' in navigator) {

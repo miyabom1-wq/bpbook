@@ -1,8 +1,9 @@
-// ====== 血圧管理ブック (PWA) Robust Init ======
+// ====== 血圧管理ブック (PWA) v5 ======
 const STORAGE_KEY = 'bpbook_entries_v1';
+const OPTS_KEY = 'bpbook_options_v1';
 
 // ---------- Utils ----------
-const $id = (id) => document.getElementById(id);
+const $ = (sel) => document.querySelector(sel);
 function fmt(ts){
   const d = new Date(ts);
   const yy = String(d.getFullYear()).slice(2);
@@ -17,31 +18,38 @@ function loadEntries(){
   catch { return []; }
 }
 function saveEntries(list){ localStorage.setItem(STORAGE_KEY, JSON.stringify(list)); }
+function loadOpts(){
+  try { return JSON.parse(localStorage.getItem(OPTS_KEY)) || { showPulse:true, showFooter:false }; }
+  catch { return { showPulse:true, showFooter:false }; }
+}
+function saveOpts(o){ localStorage.setItem(OPTS_KEY, JSON.stringify(o)); }
+
+// 値の色分け（目安）
+function classifySys(v){ if(v>=140) return 'bad'; if(v>=130) return 'warn'; if(v>=120) return 'warn'; return 'good'; }
+function classifyDia(v){ if(v>=90) return 'bad'; if(v>=80) return 'warn'; return 'good'; }
 
 // ---------- State ----------
 let entries = loadEntries(); // {id, ts, s, d, p}
+let opts = loadOpts();       // {showPulse, showFooter}
 let chart;
 let rangeMode = '30'; // '30' | '90' | 'all'
 
-// ---------- DOM refs (guarded) ----------
-const dt = $id('dt');
-const sys = $id('sys');
-const dia = $id('dia');
-const pul = $id('pul');
-const btnAdd = $id('btn-add');
-const btnNow = $id('btn-now');
-const tbodyHome = document.querySelector('#list-home tbody');
-const tbodyAll  = document.querySelector('#list-all tbody');
-const rangeSelect = $id('range-select');
-const btnExport = $id('btn-export');
-const fileImport = $id('file-import');
-const pageHome = $id('page-home');
-const pageAll = $id('page-all');
-const navHome = $id('nav-home');
-const navAll = $id('nav-all');
-const chartCanvas = $id('chart');
+// ---------- DOM refs ----------
+const dt = $('#dt'); const sys = $('#sys'); const dia = $('#dia'); const pul = $('#pul');
+const btnAdd = $('#btn-add'); const btnNow = $('#btn-now');
+const tbodyHome = $('#list-home tbody'); const tbodyAll = $('#list-all tbody');
+const rangeSelect = $('#range-select'); const btnExport = $('#menu-export'); const fileImport = $('#file-import');
+const pageHome = $('#page-home'); const pageAll = $('#page-all');
+const navHome = $('#nav-home'); const navAll = $('#nav-all');
+const chartCanvas = $('#chart');
+const footerNote = $('#footer-note');
+// menu & settings
+const btnMenu = $('#btn-menu'); const menu = $('#menu');
+const btnSettings = $('#btn-settings');
+const modal = $('#settings-modal'); const optPulse = $('#opt-show-pulse'); const optFooter = $('#opt-show-footer');
+const btnSettingsSave = $('#settings-save'); const btnSettingsClose = $('#settings-close');
 
-// ---------- Init minimal first (soボタンが必ず動く) ----------
+// ---------- Init ----------
 function setNow(){
   if(!dt) return;
   const n = new Date();
@@ -65,19 +73,16 @@ if(btnAdd) btnAdd.addEventListener('click', ()=>{
   entries.push({ id: crypto.randomUUID(), ts, s, d, p });
   entries.sort((a,b)=> b.ts - a.ts);
   saveEntries(entries);
-  renderTables();
-  renderChart();
+  renderTables(); renderChart();
   sys.value=''; dia.value=''; pul.value=''; sys.focus();
 });
 
-if(rangeSelect) rangeSelect.addEventListener('change', (e)=>{
-  rangeMode = e.target.value; renderChart();
-});
+if(rangeSelect) rangeSelect.addEventListener('change', (e)=>{ rangeMode = e.target.value; renderChart(); });
 
 if(btnExport) btnExport.addEventListener('click', ()=>{
   const lines = ['timestamp,systolic,diastolic,pulse'];
   entries.forEach(e=>lines.push(`${e.ts},${e.s},${e.d},${e.p}`));
-  const blob = new Blob([lines.join('\n')], {type:'text/csv'});
+  const blob = new Blob([lines.join('\\n')], {type:'text/csv'});
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a'); a.href = url; a.download = 'bpbook.csv'; a.click();
   URL.revokeObjectURL(url);
@@ -87,7 +92,7 @@ if(fileImport) fileImport.addEventListener('change', async (ev)=>{
   const file = ev.target.files?.[0]; if(!file) return;
   const text = await file.text();
   const out = [];
-  text.split(/\r?\n/).forEach((line, idx)=>{
+  text.split(/\\r?\\n/).forEach((line, idx)=>{
     if(!line.trim()) return;
     if(idx===0 && line.toLowerCase().includes('timestamp')) return;
     const p = line.split(',');
@@ -104,42 +109,82 @@ if(fileImport) fileImport.addEventListener('change', async (ev)=>{
   saveEntries(entries); renderTables(); renderChart(); ev.target.value=''; alert('CSVを取り込みました');
 });
 
-// ---------- Routing (after listeners are ready) ----------
+// Menu toggle
+if(btnMenu) btnMenu.addEventListener('click', (e)=>{
+  e.stopPropagation();
+  menu.classList.toggle('hidden');
+});
+document.addEventListener('click', ()=> menu.classList.add('hidden'));
+
+// Settings modal
+function openSettings(){
+  optPulse.checked = !!opts.showPulse;
+  optFooter.checked = !!opts.showFooter;
+  modal.classList.remove('hidden');
+}
+function closeSettings(){ modal.classList.add('hidden'); }
+if(btnSettings) btnSettings.addEventListener('click', (e)=>{ e.stopPropagation(); openSettings(); });
+if(btnSettingsClose) btnSettingsClose.addEventListener('click', closeSettings);
+if(btnSettingsSave) btnSettingsSave.addEventListener('click', ()=>{
+  opts.showPulse = !!optPulse.checked;
+  opts.showFooter = !!optFooter.checked;
+  saveOpts(opts);
+  applyOptions();
+  closeSettings();
+});
+
+// Routing
 function go(hash){
-  if(!pageHome || !pageAll) return;
   if(hash==='#all'){ pageHome.classList.add('hidden'); pageAll.classList.remove('hidden'); }
   else { pageAll.classList.add('hidden'); pageHome.classList.remove('hidden'); }
   renderTables(); renderChart();
   if(location.hash !== hash) location.hash = hash;
 }
-if(navHome) navHome.addEventListener('click', ()=>go('#home'));
-if(navAll) navAll.addEventListener('click', ()=>go('#all'));
+if($('#nav-home')) $('#nav-home').addEventListener('click', ()=>go('#home'));
+if($('#nav-all')) $('#nav-all').addEventListener('click', ()=>go('#all'));
 window.addEventListener('hashchange', ()=> go(location.hash||'#home'));
 go(location.hash||'#home');
 
-// ---------- Rendering ----------
+// Rendering
+function applyOptions(){
+  document.querySelectorAll('.col-pulse, td.col-pulse').forEach(el=>{
+    el.style.display = opts.showPulse ? '' : 'none';
+  });
+  if(opts.showFooter) footerNote.classList.remove('hidden'); else footerNote.classList.add('hidden');
+}
+
 function renderTables(){
-  if(tbodyHome){
-    const latest = entries.slice(0,5);
-    tbodyHome.innerHTML = latest.map(rowHtml).join('');
-    attachRowActions(tbodyHome);
-  }
-  if(tbodyAll){
-    tbodyAll.innerHTML = entries.map(rowHtml).join('');
-    attachRowActions(tbodyAll);
+  const latest = entries.slice(0,5);
+  tbodyHome.innerHTML = latest.map(rowHtml).join('');
+  attachRowActions(tbodyHome);
+  tbodyAll.innerHTML = entries.map(rowHtml).join('');
+  attachRowActions(tbodyAll);
+  applyOptions();
+
+  const narrow = matchMedia('(max-width:540px)').matches;
+  if(narrow){
+    document.querySelectorAll('tbody td.col-num').forEach((td, i)=>{
+      const cols = opts.showPulse ? 3 : 2;
+      const mod = i % cols;
+      const label = mod===0 ? '収縮' : (mod===1 ? '拡張' : '脈拍');
+      td.setAttribute('data-label', label);
+    });
   }
 }
 
 function rowHtml(e){
+  const clsS = classifySys(e.s);
+  const clsD = classifyDia(e.d);
+  const pulseCell = `<td class="num col-num col-pulse">${e.p}</td>`;
   return `<tr data-id="${e.id}">
     <td class="col-date">${fmt(e.ts)}</td>
-    <td class="num col-num">${e.s}</td>
-    <td class="num col-num">${e.d}</td>
-    <td class="num col-num">${e.p}</td>
-    <td class="row-actions">
+    <td class="num col-num"><span class="value ${clsS}">${e.s}</span></td>
+    <td class="num col-num"><span class="value ${clsD}">${e.d}</span></td>
+    ${pulseCell}
+    <td class="col-actions"><div class="row-actions">
       <button data-act="edit">編集</button>
       <button data-act="del">削除</button>
-    </td>
+    </div></td>
   </tr>`;
 }
 
@@ -203,6 +248,6 @@ function renderChart(){
   });
 }
 
-// First paint in case entries already exist
-renderTables();
-renderChart();
+// Apply options & first paint
+applyOptions();
+renderTables(); renderChart();
