@@ -123,15 +123,29 @@ function openSettings(){
   modal.classList.remove('hidden');
 }
 function closeSettings(){ modal.classList.add('hidden'); }
-if(btnSettings) btnSettings.addEventListener('click', (e)=>{ e.stopPropagation(); openSettings(); });
+if(btnSettings) btnSettings.addEventListener('click', (e)=>{ e.stopPropagation(); if(menu) menu.classList.add('hidden'); openSettings(); });
 if(btnSettingsClose) btnSettingsClose.addEventListener('click', closeSettings);
-if(btnSettingsSave) btnSettingsSave.addEventListener('click', ()=>{
+if(btnSettingsSave) btnSettingsSave.addEventListener('click', ()=>{ saveSettingsAndClose(); });
+// ----- Robust close handlers -----
+function saveSettingsAndClose(){
   opts.showPulse = !!optPulse.checked;
   opts.showFooter = !!optFooter.checked;
   saveOpts(opts);
   applyOptions();
   closeSettings();
+}
+// Close on ESC and backdrop click
+document.addEventListener('keydown', (e)=>{ if(e.key === 'Escape') closeSettings(); });
+if(modal) modal.addEventListener('click', (e)=>{
+  if(e.target === modal) closeSettings();
 });
+// Delegated fallback for Save (in case listener didn't bind for some reason)
+document.addEventListener('click', (e)=>{
+  if(e.target instanceof Element && e.target.closest('#settings-save')){
+    e.preventDefault(); saveSettingsAndClose();
+  }
+});
+
 
 // Routing
 function go(hash){
