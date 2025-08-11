@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>血圧管理ブック (PWA)</title>
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="stylesheet" href="style.css">
+  <meta name="theme-color" content="#ffffff">
+  <script defer src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script defer src="app.js"></script>
+</head>
+<body>
+  <header>
+    <h1>血圧管理ブック</h1>
+    <div class="actions">
+      <button id="nav-home">ホーム</button>
+      <button id="nav-all">全記録</button>
+      <button id="btn-export" title="CSVエクスポート">CSV出力</button>
+      <label class="import-label">
+        CSV取込 <input type="file" id="file-import" accept=".csv,text/csv">
+      </label>
+      <select id="range-select" title="表示範囲">
+        <option value="30">直近30件</option>
+        <option value="90">直近90件</option>
+        <option value="all">全件</option>
+      </select>
+    </div>
+  </header>
+
+  <main>
+    <!-- Home Page: latest 5 -->
+    <section id="page-home">
+      <section class="form-card">
+        <div class="field">
+          <label>日時</label>
+          <input type="datetime-local" id="dt" />
+          <button class="now-btn" id="btn-now">Now</button>
+        </div>
+        <div class="grid3">
+          <div class="field">
+            <label>収縮(上)</label>
+            <input type="number" id="sys" inputmode="numeric" placeholder="120" />
+          </div>
+          <div class="field">
+            <label>拡張(下)</label>
+            <input type="number" id="dia" inputmode="numeric" placeholder="80" />
+          </div>
+          <div class="field">
+            <label>脈拍</label>
+            <input type="number" id="pul" inputmode="numeric" placeholder="70" />
+          </div>
+        </div>
+        <button class="primary" id="btn-add">記録する</button>
+        <div class="hint">範囲: 収縮 60–250 / 拡張 40–200 / 脈拍 30–200</div>
+      </section>
+
+      <section class="table-card">
+        <div class="table-title">直近5件</div>
+        <table id="list-home">
+          <thead>
+            <tr>
+              <th class="col-date">日付</th>
+              <th class="num col-num">収縮</th>
+              <th class="num col-num">拡張</th>
+              <th class="num col-num">脈拍</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </section>
+
+      <section class="chart-card">
+        <canvas id="chart" height="160"></canvas>
+      </section>
+    </section>
+
+    <!-- All records page -->
+    <section id="page-all" class="hidden">
+      <section class="table-card">
+        <div class="table-title">全記録</div>
+        <table id="list-all">
+          <thead>
+            <tr>
+              <th class="col-date">日付</th>
+              <th class="num col-num">収縮</th>
+              <th class="num col-num">拡張</th>
+              <th class="num col-num">脈拍</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </section>
+    </section>
+  </main>
+
+  <footer>
+    <small>データは端末内に保存されます（オフライン可）</small>
+  </footer>
+
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./service-worker.js');
+      });
+    }
+  </script>
+</body>
+</html>
